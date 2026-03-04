@@ -6,8 +6,8 @@ import pandas as pd
 
 app = Flask(__name__)
 regmodel = pickle.load(open('regmodel.pkl','rb'))
-scaler = pickle.load(open('scaler.pkl','rb'))
-scalar = pickle.load(open('scalar.pkl','rb'))
+scaler = pickle.load(open('scaling.pkl','rb'))
+scalar = pickle.load(open('scaling.pkl','rb'))
 
 @app.route('/')
 def home():
@@ -16,23 +16,19 @@ def home():
 
 @app.route('/predict_api', methods=['POST'])
 def predict_api():
-    payload = request.get_json(force=True)
-    # support both: {"data": {...}} and direct dict payload
-    if isinstance(payload, dict) and 'data' in payload:
-        data = payload['data']
-    else:
-        data = payload
+    data = request.json['data']
+    
+    print(data)
 
-    try:
-        # prefer a DataFrame to preserve column ordering by name
-        new_df = pd.DataFrame([data])
-        new_data = scaler.transform(new_df)
-    except Exception:
-        # fallback: transform values order (less reliable unless consistent)
-        new_data = scaler.transform(np.array(list(data.values())).reshape(1, -1))
+    values_array = np.array(list(data.values())).reshape(1, -1)
+    print(values_array)
 
+    new_data = scalar.transform(values_array)
     output = regmodel.predict(new_data)
-    return jsonify({'prediction': float(output[0])})
+
+    print(output[0])
+
+    return jsonify(output[0])
 
 
 if __name__ =="__main__":
